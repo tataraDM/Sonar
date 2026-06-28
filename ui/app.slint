@@ -80,6 +80,8 @@ export component AppWindow inherits Window {
                     background: #ffffff;
 
                     log-edit := TextEdit {
+                        width: 100%;
+                        height: 100%;
                         text: root.log-text;
                         read-only: true;
                         wrap: word-wrap;
@@ -107,6 +109,8 @@ export component AppWindow inherits Window {
                     background: #ffffff;
 
                     srv-edit := TextEdit {
+                        width: 100%;
+                        height: 100%;
                         text: root.server-display-text;
                         read-only: true;
                         wrap: word-wrap;

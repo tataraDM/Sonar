@@ -47,15 +47,6 @@ impl ServerEntry {
     }
 }
 
-/// 复制文本到系统剪贴板
-fn copy_to_clipboard(text: &str) {
-    if text.is_empty() { return; }
-    match arboard::Clipboard::new() {
-        Ok(mut cb) => { let _ = cb.set_text(text.to_string()); }
-        Err(_) => {}
-    }
-}
-
 // ============================================================================
 // 双通道收发：pnet 发送 + Winsock UDP:68 接收
 // ============================================================================
@@ -366,33 +357,6 @@ fn main() {
                 *selected_idx.lock().unwrap() = idx;
                 if let Some(win) = weak.upgrade() { win.set_current_mac_address(format!("{}", mac).into()); }
             }
-        });
-    }
-
-    // ---- 复制日志到剪贴板 ----
-    {
-        let weak = app.as_weak();
-        app.on_copy_log_text(move || {
-            let text = match weak.upgrade() {
-                Some(win) => win.get_log_text().to_string(),
-                None => String::new(),
-            };
-            copy_to_clipboard(&text);
-            text.into()
-        });
-    }
-
-    // ---- 复制服务器列表到剪贴板 ----
-    {
-        let weak = app.as_weak();
-        app.on_copy_server_text(move || {
-            let text = match weak.upgrade() {
-                Some(win) => win.get_server_display_text().to_string(),
-                None => String::new(),
-            };
-            if text == "（暂无）" { return String::new().into(); }
-            copy_to_clipboard(&text);
-            text.into()
         });
     }
 

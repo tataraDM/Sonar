@@ -1,0 +1,22 @@
+# Rust 构建产物
+/target/
+
+# Slint 构建产物
+/.slint/
+
+# IDE 配置
+/.vscode/
+/.idea/
+/.claude/
+
+# WorkBuddy 工作目录
+/.workbuddy/
+
+# 临时文件
+*.png
+*.json
+!Cargo.lock
+
+# 系统文件
+Thumbs.db
+.DS_Store

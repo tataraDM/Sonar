@@ -1,0 +1,166 @@
+import { ComboBox, Button, VerticalBox, HorizontalBox } from "std-widgets.slint";
+
+export component AppWindow inherits Window {
+    title: "Sonar - DHCP 局域网诊断工具";
+    preferred-width: 1000px;
+    preferred-height: 640px;
+    background: #f5f5f5;
+
+    in-out property <[string]> network-interfaces;
+    in-out property <string> current-mac-address;
+    in-out property <string> log-text: "";
+    in-out property <string> server-display-text: "（暂无）";
+    in-out property <bool> is-scanning: false;
+
+    // 智能滚动：用户滚离底部时停止自动跟随，滚回底部时恢复
+    in-out property <bool> follow-log: true;
+
+    callback select-interface(string);
+    callback start-full-scan();
+    callback start-loop-test();
+    callback clear-logs();
+    callback copy-log-text() -> string;
+    callback copy-server-text() -> string;
+
+    // 由 Rust 调用，将日志区滚动到底部
+    callback scroll-log-to-bottom();
+    scroll-log-to-bottom() => {
+        log-flick.viewport-y = min(0px, log-flick.height - log-txt.preferred-height);
+    }
+
+    VerticalBox {
+        padding: 16px;
+        spacing: 10px;
+
+        Text { text: "网卡选择"; font-size: 13px; color: #333333; font-weight: 600; }
+
+        ComboBox {
+            model: root.network-interfaces;
+            current-index: 0;
+            enabled: !root.is-scanning;
+            selected(value) => { root.select-interface(value); }
+        }
+
+        HorizontalBox {
+            spacing: 8px;
+            Text { text: "MAC 地址:"; font-size: 12px; color: #666666; }
+            Text { text: root.current-mac-address; font-size: 12px; color: #1a73e8; font-weight: 600; }
+        }
+
+        Rectangle { height: 1px; background: #e0e0e0; }
+
+        Text { text: "操作"; font-size: 13px; color: #333333; font-weight: 600; }
+
+        HorizontalBox {
+            spacing: 10px;
+            Button { text: "全面 DHCP 发现"; enabled: !root.is-scanning; clicked => { root.start-full-scan(); } }
+            Button { text: "网络环路检测"; enabled: !root.is-scanning; clicked => { root.start-loop-test(); } }
+            Button { text: "清空日志"; clicked => { root.clear-logs(); } }
+        }
+
+        Rectangle { height: 1px; background: #e0e0e0; }
+
+        // ===== 左右双栏布局 =====
+        HorizontalBox {
+            spacing: 10px;
+
+            // ===== 左栏：诊断日志 =====
+            VerticalBox {
+                width: 60%;
+                min-width: 400px;
+
+                HorizontalBox {
+                    spacing: 4px;
+                    Text { text: "诊断日志"; font-size: 13px; font-weight: 600; color: #333333; vertical-alignment: center; }
+                    Text { text: "(点击下方按钮可复制全部内容)"; font-size: 11px; color: #999999; vertical-alignment: center; }
+                }
+
+                HorizontalBox {
+                    height: 32px;
+                    Button {
+                        text: "复制日志";
+                        min-width: 100px;
+                        max-width: 120px;
+                        clicked => { root.copy-log-text(); }
+                    }
+                    Rectangle { vertical-stretch: 1; }
+                }
+
+                Rectangle {
+                    vertical-stretch: 1;
+                    border-radius: 4px;
+                    border-width: 1px;
+                    border-color: #d0d0d0;
+                    background: #ffffff;
+
+                    log-flick := Flickable {
+                        width: 100%;
+                        height: 100%;
+                        viewport-height: log-txt.preferred-height;
+
+                        // 用户拖动/滚轮后触发：判断是否在底部
+                        flicked() => {
+                            root.follow-log = self.viewport-y <= (self.height - self.viewport-height + 5px);
+                        }
+
+                        log-txt := Text {
+                            text: root.log-text;
+                            font-size: 12px;
+                            font-family: "Cascadia Code";
+                            wrap: word-wrap;
+                            color: #1a1a1a;
+                            width: log-flick.width;
+                        }
+                    }
+                }
+            }
+
+            // ===== 右栏：DHCP 服务器列表 =====
+            VerticalBox {
+                width: 40%;
+                min-width: 300px;
+
+                HorizontalBox {
+                    spacing: 4px;
+                    Text { text: "发现的服务器"; font-size: 13px; font-weight: 600; color: #333333; vertical-alignment: center; }
+                    Text { text: "(点击下方按钮可复制全部内容)"; font-size: 11px; color: #999999; vertical-alignment: center; }
+                }
+
+                HorizontalBox {
+                    height: 32px;
+                    Button {
+                        text: "复制列表";
+                        min-width: 100px;
+                        max-width: 120px;
+                        clicked => { root.copy-server-text(); }
+                    }
+                    Rectangle { vertical-stretch: 1; }
+                }
+
+                Rectangle {
+                    vertical-stretch: 1;
+                    border-radius: 4px;
+                    border-width: 1px;
+                    border-color: #d0d0d0;
+                    background: #ffffff;
+
+                    srv-flick := Flickable {
+                        width: 100%;
+                        height: 100%;
+                        viewport-height: srv-txt.preferred-height;
+                        viewport-y: min(0px, self.height - srv-txt.preferred-height);
+
+                        srv-txt := Text {
+                            text: root.server-display-text;
+                            font-size: 12px;
+                            font-family: "Cascadia Code";
+                            wrap: word-wrap;
+                            color: #1a1a1a;
+                            width: srv-flick.width;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
